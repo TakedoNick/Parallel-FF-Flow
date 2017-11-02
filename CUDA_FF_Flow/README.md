@@ -1,4 +1,4 @@
-# randomly generate a graph in form of adjasent matrix and store the result in file 'mygraph.txt' 
+# randomly generate a graph in form of adjacent matrix and store the result in file 'mygraph.txt' 
 > ./<out> <graph_size> <edge_number> >mygraph.txt
 example: `./out 1000 500000 >mygraph.txt`
 

@@ -55,6 +55,8 @@ int main(int arg, char** argv) {
 	}
 	const int N = atoi(argv[1]);
 
+	int maxflow = 0;
+
 	//Read graph from <input>.txt
 	bool* h_adj_mat = (bool*)malloc(N*N*sizeof(bool));
 	int* h_cap_mat = (int*)malloc(N*N*sizeof(int));
@@ -73,7 +75,7 @@ int main(int arg, char** argv) {
 		h_cap_mat[i] = 0;
 		h_cap_max_mat[i] = atoi(arr[1].c_str());
 
-		cout<<a<<":"<<h_adj_mat[i]<<" "<<h_cap_max_mat[i]<<"<>";
+		//cout<<a<<":"<<h_adj_mat[i]<<" "<<h_cap_max_mat[i]<<"<>";
 	}
 
 	bool* h_par_mat = (bool*)malloc(N*N*sizeof(bool));
@@ -127,9 +129,8 @@ int main(int arg, char** argv) {
 		cudaMemcpy((void*) d_new_frontier, (void*) h_new_frontier, sizeof(bool)*N, cudaMemcpyHostToDevice);
 
 		bool augFound = false;
+		cout<<"\nFrontier:"<<endl<<endl;
 		while(h_frontier[0] != 0) {
-
-			cout<<"Frontier:"<<endl<<endl;
 			for(int i = 0; i < h_frontier[0]; i++)
 				cout<<h_frontier[i + 1]<<" ";
 			cout<<endl;
@@ -155,7 +156,7 @@ int main(int arg, char** argv) {
 			cout<<"\nAugmented path found!"<<endl;
 			cudaMemcpy((void*) h_par_mat, (void*) d_par_mat, sizeof(bool) * N * N, cudaMemcpyDeviceToHost);
 
-			cout<<"Parent matrix:"<<endl<<endl;
+			cout<<"\nParent matrix:"<<endl<<endl;
 			for(int i = 0; i < N; i++) {
 				for(int j = 0; j < N; j++) {
 					cout<<h_par_mat[i * N + j]<<" ";
@@ -179,6 +180,7 @@ int main(int arg, char** argv) {
 			}
 
 			//Display augmented path
+			cout<<"\nAugmented Path:\n\n";
 			for(int i = 0; i < N; i++) {
 				if(augPath[i] == 0) {
 					cout<<augPath[i]<<endl;
@@ -210,6 +212,7 @@ int main(int arg, char** argv) {
 				}
 			}
 			cout<<"\nBottleneck of augmented path: "<<bottleneck<<endl;
+			maxflow += bottleneck;
 
 			//Update capacities in h_cap_mat
 			for(int i = 0; i < N; i++) {
@@ -229,10 +232,12 @@ int main(int arg, char** argv) {
 			cudaMemcpy((void*) d_cap_mat, (void*) h_cap_mat, sizeof(int)*N*N, cudaMemcpyHostToDevice);
 		} else {
 			cout<<"\nFord Fulkerson complete!\n";
+			cout<<"\nMaximum Flow: "<<maxflow<<"\n";
 			break;
 		}
 	}
 
+	//Display execution times
 	end = clock();
 	cout<<"\nTime taken to run complete parallel Ford Fulkerson algorithm: "<<double(end - start)<<"us"<<endl;
 	cout<<"Time taken to run kernel: "<<t<<"us"<<endl;

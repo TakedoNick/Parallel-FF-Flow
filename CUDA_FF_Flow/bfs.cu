@@ -72,8 +72,10 @@ int main(int arg, char** argv){
 		if(arr[0]=="1") h_adj_mat[i] = true;
 		else h_adj_mat[i] = false;
 
-		h_cap_mat[i] = atoi(arr[i].c_str());
-		h_cap_max_mat[i] = atoi(arr[i].c_str());
+		h_cap_mat[i] = atoi(arr[1].c_str());
+		h_cap_max_mat[i] = atoi(arr[1].c_str());
+
+		//cout<<a<<":"<<h_adj_mat[i]<<" "<<h_cap_mat[i]<<"<>";
 	}
 
 	bool* h_par_mat = (bool*)malloc(N*N*sizeof(bool));

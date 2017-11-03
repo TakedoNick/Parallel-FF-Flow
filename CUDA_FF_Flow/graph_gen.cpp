@@ -13,8 +13,8 @@ int main(int arg, char** argv){
 		return -1;
 	}
 	const int N = atoi(argv[1]);
-	const int EDGE_NUM = atoi(argv[2]); // exist_edges / N^2
-	cout<<"generating graph of size "<<N<<"; edge number: "<<EDGE_NUM<<endl;
+	const int EDGE_NUM = atoi(argv[2]);
+	//cout<<"generating graph of size "<<N<<"; edge number: "<<EDGE_NUM<<endl;
 
 	int** adj_mat = (int**)malloc(N*sizeof(int*));
 	for(int row=0; row<N; row++)
@@ -43,8 +43,6 @@ int main(int arg, char** argv){
 		}
 		cout<<endl;
 	}
-
-
 
 	return 0;
 }

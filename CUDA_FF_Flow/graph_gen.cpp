@@ -36,7 +36,10 @@ int main(int arg, char** argv){
 	for(int i=0;i<N;i++){
 		for(int j=0;j<N;j++){
 			//cout<<adj_mat[i][j]<<' ';
-			cout<<adj_mat[i][j]<<','<<rand()%100 + 10<<' ';
+			if(adj_mat[i][j] == 1)
+				cout<<adj_mat[i][j]<<','<<rand()%100 + 10<<' ';
+			else
+				cout<<adj_mat[i][j]<<",0 ";
 		}
 		cout<<endl;
 	}

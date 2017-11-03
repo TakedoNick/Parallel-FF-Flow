@@ -9,14 +9,17 @@
 
 using namespace std;
 
-__global__ void kernel(bool* adj_mat, const int N, bool* visited, int* frontier, bool* new_frontier){
-	int row_idx = frontier[blockIdx.x+1]; 
+__global__ void kernel(bool* adj_mat, const int N, bool* visited, int* frontier, bool* new_frontier, bool* par_mat){
+	int row_idx = frontier[blockIdx.x+1];
 	long offset = N * row_idx;
 
 	// update new_frontier in threads
-	int col_idx = threadIdx.x;	
+	int col_idx = threadIdx.x;
 	if(adj_mat[offset + col_idx] && !visited[col_idx]){
 		new_frontier[col_idx] = true;
+
+		long offset2 = N * col_idx;
+		par_matrix[offset2 + row_idx] = true;
 	}
 }
 __global__ void k2(const int N, bool* visited, int* frontier, bool* new_frontier){
@@ -33,7 +36,7 @@ __global__ void k2(const int N, bool* visited, int* frontier, bool* new_frontier
 
 int main(int arg, char** argv){
 	if(arg!=2){
-		cout<<"usage: ./<out> <graph_size> >mygraph.txt"<<endl;
+		cout<<"usage: ./<out> <graph_size> <mygraph.txt"<<endl;
 		return -1;
 	}
 	const int N = atoi(argv[1]);
@@ -44,8 +47,12 @@ int main(int arg, char** argv){
 		string a;
 		cin>>a;
 		if(a=="1") h_adj_mat[i] = true;
-		else h_adj_mat[i] = false;		
+		else h_adj_mat[i] = false;
 	}
+
+	bool* h_par_mat = (bool*)malloc(N*N*sizeof(bool));
+	for(int i=0;i<N*N;i++)
+		h_par_mat[i] = false;
 
 	//generate visited and frontier vector; init them with node 0;
 	bool* h_visited = (bool*)malloc(N*sizeof(bool));
@@ -57,39 +64,45 @@ int main(int arg, char** argv){
 	h_visited[0] = true;
 	h_frontier[0] = 1;
 	h_frontier[1] = 0;
-	
+
 	//malloc mem in gpu
 	clock_t start,end, s, e;
 	start = clock();
 	bool *d_adj_mat, *d_visited, *d_new_frontier;
+	bool **d_mat_parents;
 	int *d_frontier;
 	cudaMalloc((void**) &d_adj_mat, sizeof(bool) * N * N);
 	cudaMemcpy((void*) d_adj_mat, (void*) h_adj_mat, sizeof(bool)*N*N, cudaMemcpyHostToDevice);
-	
+
+	cudaMalloc((void**) &d_par_mat, sizeof(bool) * N * N);
+	cudaMemcpy((void*) d_par_mat, (void*) h_par_mat, sizeof(bool)*N*N, cudaMemcpyHostToDevice);
+
 	cudaMalloc((void**) &d_visited, sizeof(bool) * N);
 	cudaMemcpy((void*) d_visited, (void*) h_visited, sizeof(bool)*N, cudaMemcpyHostToDevice);
-	
+
 	cudaMalloc((void**) &d_frontier, sizeof(int) * (N+1));
 	cudaMemcpy((void*) d_frontier, (void*) h_frontier, sizeof(int)*N, cudaMemcpyHostToDevice);
-	
+
 	cudaMalloc((void**) &d_new_frontier, sizeof(bool) * N);
 	cudaMemcpy((void*) d_new_frontier, (void*) h_new_frontier, sizeof(bool)*N, cudaMemcpyHostToDevice);
 
-	//loop until frontier vector is empty 
+	//loop until frontier vector is empty
 	int cn =1;
 	double t=0;
 	while(h_frontier[0]!=0){
 		cn+=h_frontier[0];
 		//lauch kernel : launch threads to update frontier_len, visited and frontier in gpu local mem
-		s= clock();
-		kernel<<<h_frontier[0], N>>>(d_adj_mat,N,d_visited,d_frontier, d_new_frontier);
-		
+		s=clock();
+		kernel<<<h_frontier[0], N>>>(d_adj_mat,N,d_visited,d_frontier, d_new_frontier, d_par_mat);
+
 		k2<<<1,1>>>(N, d_visited,d_frontier, d_new_frontier);
 		e=clock();
 		t+=double(e-s);
 
 		cudaMemcpy((void*) h_frontier, (void*) d_frontier, sizeof(int)*1, cudaMemcpyDeviceToHost);
 	}
+	cudaMemcpy((void*) h_par_mat, (void*) d_par_mat, sizeof(bool) * N * N, cudaMemcpyDeviceToHost);
+
 	end = clock();
 	cout<<"queue through put: "<< cn<<endl;
 	cout << "parallel BFS uses " << double(end - start) << " us in total"<< endl;

@@ -9,7 +9,7 @@ int main(int arg, char** argv) {
 		return -1;
 	}
 	const int N = atoi(argv[1]);
-	const int EDGE_NUM = atoi(argv[2]);
+	const int P = atoi(argv[2]);
 
 	int** adj_mat = (int**) malloc(N * sizeof(int*));
 	for(int row = 0; row < N; row++)
@@ -18,13 +18,11 @@ int main(int arg, char** argv) {
 		for(int j = 0; j < N; j++)
 			adj_mat[i][j] = 0;
 
-	int n = EDGE_NUM;
-	while(n > 0) {
-		int u = rand() % N;
-		int v = rand() % N;
-		if(adj_mat[u][v] == 0 && u != v) {
-			adj_mat[u][v] = 1;
-			n--;
+	for(int i = 0; i < N; i++) {
+		for(int j = 0; j < N; j++) {
+			int p = rand() % 100;
+			if(p <= P)
+				adj_mat[u][v] = 1;
 		}
 	}
 

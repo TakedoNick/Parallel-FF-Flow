@@ -4,6 +4,7 @@
 // usage: ./<out> <graph_size> <mygraph.txt
 
 #include <cstdlib>
+#include <cstdio>
 #include <iostream>
 #include <time.h>
 
@@ -72,10 +73,10 @@ int main(int arg, char** argv){
 		if(arr[0]=="1") h_adj_mat[i] = true;
 		else h_adj_mat[i] = false;
 
-		h_cap_mat[i] = atoi(arr[1].c_str());
+		h_cap_mat[i] = 0;
 		h_cap_max_mat[i] = atoi(arr[1].c_str());
 
-		//cout<<a<<":"<<h_adj_mat[i]<<" "<<h_cap_mat[i]<<"<>";
+		cout<<a<<":"<<h_adj_mat[i]<<" "<<h_cap_max_mat[i]<<"<>";
 	}
 
 	bool* h_par_mat = (bool*)malloc(N*N*sizeof(bool));
@@ -107,25 +108,44 @@ int main(int arg, char** argv){
 	cudaMalloc((void**) &d_cap_max_mat, sizeof(int) * N * N);
 	cudaMemcpy((void*) d_cap_max_mat, (void*) h_cap_max_mat, sizeof(int)*N*N, cudaMemcpyHostToDevice);
 
-	cudaMalloc((void**) &d_par_mat, sizeof(bool) * N * N);
-	cudaMemcpy((void*) d_par_mat, (void*) h_par_mat, sizeof(bool)*N*N, cudaMemcpyHostToDevice);
-
-	cudaMalloc((void**) &d_visited, sizeof(bool) * N);
-	cudaMemcpy((void*) d_visited, (void*) h_visited, sizeof(bool)*N, cudaMemcpyHostToDevice);
-
-	cudaMalloc((void**) &d_frontier, sizeof(int) * (N+1));
-	cudaMemcpy((void*) d_frontier, (void*) h_frontier, sizeof(int)*N, cudaMemcpyHostToDevice);
-
-	cudaMalloc((void**) &d_new_frontier, sizeof(bool) * N);
-	cudaMemcpy((void*) d_new_frontier, (void*) h_new_frontier, sizeof(bool)*N, cudaMemcpyHostToDevice);
-
 	//loop until frontier vector is empty
 	int cn=1;
 	double t=0;
-	bool augFound = false;
 	while(1) {
+		bool* h_par_mat = (bool*)malloc(N*N*sizeof(bool));
+		for(int i=0;i<N*N;i++)
+			h_par_mat[i] = false;
+
+		//generate visited and frontier vector; init them with node 0;
+		bool* h_visited = (bool*)malloc(N*sizeof(bool));
+		for(int i=0;i<N;i++) h_visited[i] = false;
+		int* h_frontier = (int*)malloc(N*sizeof(int));
+		bool* h_new_frontier = (bool*)malloc(N*sizeof(bool));
+		for(int i=0;i<N;i++) h_new_frontier[i] = false;
+
+		h_visited[0] = true;
+		h_frontier[0] = 1;
+		h_frontier[1] = 0;
+
+		cudaMalloc((void**) &d_par_mat, sizeof(bool) * N * N);
+		cudaMemcpy((void*) d_par_mat, (void*) h_par_mat, sizeof(bool)*N*N, cudaMemcpyHostToDevice);
+
+		cudaMalloc((void**) &d_visited, sizeof(bool) * N);
+		cudaMemcpy((void*) d_visited, (void*) h_visited, sizeof(bool)*N, cudaMemcpyHostToDevice);
+
+		cudaMalloc((void**) &d_frontier, sizeof(int) * (N+1));
+		cudaMemcpy((void*) d_frontier, (void*) h_frontier, sizeof(int)*N, cudaMemcpyHostToDevice);
+
+		cudaMalloc((void**) &d_new_frontier, sizeof(bool) * N);
+		cudaMemcpy((void*) d_new_frontier, (void*) h_new_frontier, sizeof(bool)*N, cudaMemcpyHostToDevice);
+
+		bool augFound = false;
 		while(h_frontier[0]!=0){
 			cn+=h_frontier[0];
+
+			for(int i = 0; i < h_frontier[0]; i++)
+				cout<<h_frontier[i + 1]<<" ";
+			cout<<endl;
 
 			for(int i = 0; i < h_frontier[0]; i++)
 				if(h_frontier[i + 1] == (N - 1)) {
@@ -141,7 +161,15 @@ int main(int arg, char** argv){
 			e=clock();
 			t+=double(e-s);
 
-			cudaMemcpy((void*) h_frontier, (void*) d_frontier, sizeof(int)*1, cudaMemcpyDeviceToHost);
+			cudaMemcpy((void*) h_frontier, (void*) d_frontier, sizeof(int) * (N+1), cudaMemcpyDeviceToHost);
+		}
+
+		cudaMemcpy((void*) h_par_mat, (void*) d_par_mat, sizeof(bool) * N * N, cudaMemcpyDeviceToHost);
+		for(int i = 0; i < N; i++) {
+			for(int j = 0; j < N; j++) {
+				cout<<h_par_mat[i*N+j]<<" ";
+			}
+			cout<<endl;
 		}
 
 		if(augFound) {
@@ -154,7 +182,7 @@ int main(int arg, char** argv){
 			int i = 1, vertex = N - 1;
 			while(vertex != 0) {
 				for(int j = 0; j < N; j++) {
-					if(h_par_mat[i * N + j]) {
+					if(h_par_mat[vertex * N + j]) {
 						vertex = j;
 						augPath[i] = vertex;
 						i++;
@@ -194,6 +222,7 @@ int main(int arg, char** argv){
 						bottleneck = freeCap;
 				}
 			}
+			cout<<"bottleneck: "<<bottleneck<<endl;
 
 			//Update capacities in h_cap_mat
 			for(int i = 0; i < N; i++) {

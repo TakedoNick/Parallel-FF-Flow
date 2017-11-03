@@ -120,24 +120,102 @@ int main(int arg, char** argv){
 	cudaMemcpy((void*) d_new_frontier, (void*) h_new_frontier, sizeof(bool)*N, cudaMemcpyHostToDevice);
 
 	//loop until frontier vector is empty
-	int cn =1;
+	int cn=1;
 	double t=0;
-	while(h_frontier[0]!=0){
-		cn+=h_frontier[0];
-		//TODO:function call to update capacities in h_cap_mat here
-		cudaMemcpy((void*) d_cap_mat, (void*) h_cap_mat, sizeof(int)*N*N, cudaMemcpyHostToDevice);
+	bool augFound = false;
+	while(1) {
+		while(h_frontier[0]!=0){
+			cn+=h_frontier[0];
 
-		//lauch kernel : launch threads to update frontier_len, visited and frontier in gpu local mem
-		s=clock();
-		kernel<<<h_frontier[0], N>>>(d_adj_mat,N,d_visited,d_frontier, d_new_frontier, d_par_mat, d_cap_mat, d_cap_max_mat);
+			for(int i = 0; i < h_frontier[0]; i++)
+				if(h_frontier[i + 1] == (N - 1)) {
+					augFound = true;
+					break;
+				}
 
-		k2<<<1,1>>>(N, d_visited,d_frontier, d_new_frontier);
-		e=clock();
-		t+=double(e-s);
+			//lauch kernel : launch threads to update frontier_len, visited and frontier in gpu local mem
+			s=clock();
+			kernel<<<h_frontier[0], N>>>(d_adj_mat,N,d_visited,d_frontier, d_new_frontier, d_par_mat, d_cap_mat, d_cap_max_mat);
 
-		cudaMemcpy((void*) h_frontier, (void*) d_frontier, sizeof(int)*1, cudaMemcpyDeviceToHost);
+			k2<<<1,1>>>(N, d_visited,d_frontier, d_new_frontier);
+			e=clock();
+			t+=double(e-s);
+
+			cudaMemcpy((void*) h_frontier, (void*) d_frontier, sizeof(int)*1, cudaMemcpyDeviceToHost);
+		}
+
+		if(augFound) {
+			cout<<"Augmented path found!"<<endl;
+			cudaMemcpy((void*) h_par_mat, (void*) d_par_mat, sizeof(bool) * N * N, cudaMemcpyDeviceToHost);
+
+			//Find the augmented path
+			int* augPath = (int*)malloc(N*sizeof(int));
+			augPath[0] = N - 1;
+			int i = 1, vertex = N - 1;
+			while(vertex != 0) {
+				for(int j = 0; j < N; j++) {
+					if(h_par_mat[i * N + j]) {
+						vertex = j;
+						augPath[i] = vertex;
+						i++;
+						break;
+					}
+				}
+			}
+
+			//Display augmented path
+			for(int i = 0; i < N; i++) {
+				if(augPath[i] == 0) {
+					cout<<augPath[i]<<endl;
+					break;
+				} else {
+					cout<<augPath[i]<<" <- ";
+				}
+			}
+
+			//Compute the bottleneck for the augmented path
+			int bottleneck = -1;
+			for(int i = 0; i < N; i++) {
+				if(augPath[i] == 0)
+					break;
+				else {
+					int k = augPath[i];
+					int j = augPath[i + 1];
+					int freeCap;
+					if(h_adj_mat[j * N + k]) {
+						freeCap = h_cap_max_mat[j * N + k] - h_cap_mat[j * N + k];
+					} else {
+						freeCap = h_cap_mat[k * N + j];
+					}
+
+					if(bottleneck == -1)
+						bottleneck = freeCap;
+					else if(freeCap < bottleneck)
+						bottleneck = freeCap;
+				}
+			}
+
+			//Update capacities in h_cap_mat
+			for(int i = 0; i < N; i++) {
+				if(augPath[i] == 0)
+					break;
+				else {
+					int k = augPath[i];
+					int j = augPath[i + 1];
+					if(h_adj_mat[j * N + k]) {
+						h_cap_mat[j * N + k] += bottleneck;
+					} else {
+						h_cap_mat[k * N + j] -= bottleneck;
+					}
+				}
+			}
+
+			cudaMemcpy((void*) d_cap_mat, (void*) h_cap_mat, sizeof(int)*N*N, cudaMemcpyHostToDevice);
+		} else {
+			cout<<"Completed Ford Fulkerson!\n";
+			break;
+		}
 	}
-	cudaMemcpy((void*) h_par_mat, (void*) d_par_mat, sizeof(bool) * N * N, cudaMemcpyDeviceToHost);
 
 	end = clock();
 	cout<<"queue through put: "<< cn<<endl;

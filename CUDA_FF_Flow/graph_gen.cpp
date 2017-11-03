@@ -27,7 +27,7 @@ int main(int arg, char** argv){
 	while(n>0){
 		int u = rand()%N;
 		int v = rand()%N;
-		if(adj_mat[u][v]==0 && u!=v){
+		if(adj_mat[v][u]==0 && adj_mat[u][v]==0 && u!=v){
 			adj_mat[u][v] = 1;
 			n--;
 		}

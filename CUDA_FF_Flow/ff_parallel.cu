@@ -78,10 +78,6 @@ int main(int arg, char** argv) {
 		//cout<<a<<":"<<h_adj_mat[i]<<" "<<h_cap_max_mat[i]<<"<>";
 	}
 
-	bool* h_par_mat = (bool*)malloc(N*N*sizeof(bool));
-	for(int i=0;i<N*N;i++)
-		h_par_mat[i] = false;
-
 	clock_t start, end, s, e;
 	start = clock();
 
@@ -97,35 +93,38 @@ int main(int arg, char** argv) {
 	cudaMalloc((void**) &d_cap_max_mat, sizeof(int) * N * N);
 	cudaMemcpy((void*) d_cap_max_mat, (void*) h_cap_max_mat, sizeof(int)*N*N, cudaMemcpyHostToDevice);
 
+	//Allocate host memory visited and frontier
+	bool* h_par_mat = (bool*)malloc(N*N*sizeof(bool));
+	bool* h_visited = (bool*)malloc(N*sizeof(bool));
+	int* h_frontier = (int*)malloc(N*sizeof(int));
+	bool* h_new_frontier = (bool*)malloc(N*sizeof(bool));
+
+	//Allocate device memory for par_mat, visited and frontier
+	cudaMalloc((void**) &d_par_mat, sizeof(bool) * N * N);
+	cudaMalloc((void**) &d_visited, sizeof(bool) * N);
+	cudaMalloc((void**) &d_frontier, sizeof(int) * (N + 1));
+	cudaMalloc((void**) &d_new_frontier, sizeof(bool) * N);
+
+	int* augPath = (int*)malloc(N*sizeof(int));
+
 	double t = 0;
 	while(1) {
-		//Generate and initialize par_mat
-		bool* h_par_mat = (bool*)malloc(N*N*sizeof(bool));
+		//Initialize par_mat
 		for(int i=0;i<N*N;i++)
 			h_par_mat[i] = false;
 
-		//Generate and initialize visited and frontier
-		bool* h_visited = (bool*)malloc(N*sizeof(bool));
+		//Initialize visited and frontier
 		for(int i=0;i<N;i++) h_visited[i] = false;
-		int* h_frontier = (int*)malloc(N*sizeof(int));
-		bool* h_new_frontier = (bool*)malloc(N*sizeof(bool));
 		for(int i=0;i<N;i++) h_new_frontier[i] = false;
 
 		h_visited[0] = true;
 		h_frontier[0] = 1;
 		h_frontier[1] = 0;
 
-		//Allocate device memory for par_mat, visited and frontier
-		cudaMalloc((void**) &d_par_mat, sizeof(bool) * N * N);
+		//Copy to device memory for par_mat, visited and frontier
 		cudaMemcpy((void*) d_par_mat, (void*) h_par_mat, sizeof(bool)*N*N, cudaMemcpyHostToDevice);
-
-		cudaMalloc((void**) &d_visited, sizeof(bool) * N);
 		cudaMemcpy((void*) d_visited, (void*) h_visited, sizeof(bool)*N, cudaMemcpyHostToDevice);
-
-		cudaMalloc((void**) &d_frontier, sizeof(int) * (N + 1));
 		cudaMemcpy((void*) d_frontier, (void*) h_frontier, sizeof(int)*N, cudaMemcpyHostToDevice);
-
-		cudaMalloc((void**) &d_new_frontier, sizeof(bool) * N);
 		cudaMemcpy((void*) d_new_frontier, (void*) h_new_frontier, sizeof(bool)*N, cudaMemcpyHostToDevice);
 
 		bool augFound = false;
@@ -145,7 +144,7 @@ int main(int arg, char** argv) {
 			//Call to kernels
 			s = clock();
 			kernel<<<h_frontier[0], N>>>(d_adj_mat,N,d_visited,d_frontier, d_new_frontier, d_par_mat, d_cap_mat, d_cap_max_mat);
-			k2<<<1, 1>>>(N, d_visited,d_frontier, d_new_frontier);
+			k2<<<1, 1>>>(N, d_visited, d_frontier, d_new_frontier);
 			e = clock();
 			t += double(e - s);
 
@@ -165,7 +164,6 @@ int main(int arg, char** argv) {
 			}
 
 			//Find the augmented path
-			int* augPath = (int*)malloc(N*sizeof(int));
 			augPath[0] = N - 1;
 			int i = 1, vertex = N - 1;
 			while(vertex != 0) {
@@ -242,6 +240,23 @@ int main(int arg, char** argv) {
 	cout<<"\nTime taken to run complete parallel Ford Fulkerson algorithm: "<<double(end - start)<<"us"<<endl;
 	cout<<"Time taken to run kernel: "<<t<<"us"<<endl;
 	cout<<"Time taken for memcpy from host to device: "<<double(end - start) - t<<"us"<<endl;
+
+	//Free all memory
+	free(augPath);
+	free(h_par_mat);
+	free(h_visited);
+	free(h_frontier);
+	free(h_new_frontier);
+	free(h_adj_mat);
+	free(h_cap_mat);
+	free(h_cap_max_mat);
+	cudaFree(d_par_mat);
+	cudaFree(d_visited);
+	cudaFree(d_frontier);
+	cudaFree(d_new_frontier);
+	cudaFree(d_adj_mat);
+	cudaFree(d_cap_mat);
+	cudaFree(d_cap_max_mat);
 
 	return 0;
 }

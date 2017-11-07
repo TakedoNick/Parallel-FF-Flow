@@ -5,7 +5,7 @@ using namespace std;
 
 int main(int arg, char** argv) {
 	if(arg != 3){
-		cout<<"Please run in the following manner: ./<out> <graph_size> <edge_number> >mygraph.txt"<<endl;
+		cout<<"Please run in the following manner: ./<out> <graph_size> <percentege> ><output>.txt"<<endl;
 		return -1;
 	}
 	const int N = atoi(argv[1]);
@@ -22,7 +22,7 @@ int main(int arg, char** argv) {
 		for(int j = 0; j < N; j++) {
 			int p = rand() % 100;
 			if(p <= P)
-				adj_mat[u][v] = 1;
+				adj_mat[i][j] = 1;
 		}
 	}
 

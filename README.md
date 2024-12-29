@@ -10,12 +10,49 @@ The Max-Flow problem identifies the maximum capacity path from a source to a sin
 
 Solving network flow problems such as Max-Flow/Min-Cut is critical in various domains, including transportation, communication networks, and computer vision. Traditional sequential approaches often struggle with large-scale graphs due to high time complexity. With the advent of GPU computing, parallel processing offers an opportunity to significantly accelerate such algorithms. This project aims to explore and implement these advancements, making network flow analysis faster and more efficient.
 
-## Features
+## Project Architecture
 
-- Parallelized depth-first search (DFS) for efficient augmenting path identification.
-- GPU-based processing for graph cuts and bottleneck capacity computations.
-- Optimized memory usage and synchronization mechanisms.
-- Support for both dense and sparse graph structures.
+The implementation leverages a CUDA-enabled GPU as a co-processor to parallelize the Ford-Fulkerson algorithm for solving the Max-Flow problem. The architecture combines CPU-based control and GPU-based computation for optimal performance.
+
+![Architechture](imgs/Architecture%20Diagram.jpg)
+
+### Components
+
+1. **CPU (Host)**:
+   - Performs input preparation and initial Breadth-First Search (BFS).
+   - Allocates tasks and kernel instructions to the GPU.
+   - Transfers data to the GPU via CUDA `memcpy`.
+
+2. **CUDA-Enabled GPU (Device)**:
+   - Processes augmenting paths in parallel using 2D compute grids.
+   - Assigns threads to explore paths and calculate bottleneck capacities.
+   - Uses shared memory for thread communication and global memory for synchronization.
+
+3. **Memory Management**:
+   - **Host Memory**: Stores input data and BFS results.
+   - **Device Memory**: Manages path exploration and flow updates.
+
+### Workflow
+
+1. **Input Preparation**:
+   - Graph adjacency matrix and capacities are loaded into CPU memory.
+2. **BFS Execution**:
+   - CPU computes initial augmenting paths and transfers results to the GPU.
+3. **Kernel Execution**:
+   - GPU assigns augmenting paths to 2D blocks, with threads processing paths independently.
+   - Shared memory handles intra-block communication; global memory handles inter-block updates.
+4. **Path Exploration**:
+   - Threads calculate bottleneck capacities and update flows concurrently.
+   - Loops continue until no more augmenting paths are found.
+5. **Output Generation**:
+   - Results, including maximum flow and computation times, are sent back to the CPU.
+
+### Key Features
+
+- **Parallel Processing**: GPU processes augmenting paths concurrently, reducing execution time.
+- **Hierarchical Memory**: Shared memory optimizes intra-block operations; global memory supports synchronization.
+- **Scalability**: Architecture supports large graphs, limited by GPU hardware constraints.
+
 
 ## Technologies Used
 

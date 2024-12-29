@@ -47,7 +47,7 @@ The implementation leverages a CUDA-enabled GPU as a co-processor to parallelize
 5. **Output Generation**:
    - Results, including maximum flow and computation times, are sent back to the CPU.
 
-### Key Features
+### Key Optimizations
 
 - **Parallel Processing**: GPU processes augmenting paths concurrently, reducing execution time.
 - **Hierarchical Memory**: Shared memory optimizes intra-block operations; global memory supports synchronization.

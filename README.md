@@ -88,39 +88,39 @@ The implementation leverages a CUDA-enabled GPU as a co-processor to parallelize
 	  •	<input_file>: File containing the adjacency matrix representation of the graph.
 
     Input Format: Example format for a 10 Node Graph
-   ```bash
-   	0 14 0 0 0 0 0 0 0 0
-	0 0 10 0 0 0 0 0 0 0
-	0 0 0 5 0 0 0 0 0 0
-	0 0 0 0 10 0 0 0 0 0
-	0 0 0 0 0 8 0 0 0 0
-	0 0 0 0 0 0 6 0 0 0
-	0 0 0 0 0 0 0 11 0 0
-	0 0 0 0 0 0 0 0 16 0
-	0 0 0 0 0 0 0 0 0 20
-	0 0 0 0 0 0 0 0 0 0
-   ```
+```bash
+0 14 0 0 0 0 0 0 0 0
+0 0 10 0 0 0 0 0 0 0
+0 0 0 5 0 0 0 0 0 0
+0 0 0 0 10 0 0 0 0 0
+0 0 0 0 0 8 0 0 0 0
+0 0 0 0 0 0 6 0 0 0
+0 0 0 0 0 0 0 11 0 0
+0 0 0 0 0 0 0 0 16 0
+0 0 0 0 0 0 0 0 0 20
+0 0 0 0 0 0 0 0 0 0
+```
    
 
 4. Execution
-   ```bash
-   ./parallel_ff_flow <graph_size> <input_file>
-   ```
+```bash
+./parallel_ff_flow <graph_size> <input_file>
+```
 
 5. Output
-   - Augmented Paths
-   ```bash
-   	Augmented Path: 0 -> 1 -> 2 -> 3
-	Bottleneck of augmented path: 14
-   ```
+- Augmented Paths
+```bash
+Augmented Path: 0 -> 1 -> 2 -> 3
+Bottleneck of augmented path: 14
+```
 
 6. Performance Metrics
-   ```bash
-   	Time taken to run complete parallel Ford-Fulkerson algorithm: 45559 µs
-	Time taken for kernel: 11583 µs
-	Time taken for memory from host to device: 34610 µs
-	Maximum Flow: 324
-   ```
+```bash
+Time taken to run complete parallel Ford-Fulkerson algorithm: 45559 µs
+Time taken for kernel: 11583 µs
+Time taken for memory from host to device: 34610 µs
+Maximum Flow: 324
+```
 
 ## Project Architecture
 

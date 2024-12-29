@@ -14,6 +14,21 @@ Solving network flow problems such as Max-Flow/Min-Cut is critical in various do
 
 The implementation leverages a CUDA-enabled GPU as a co-processor to parallelize the Ford-Fulkerson algorithm for solving the Max-Flow problem. The architecture combines CPU-based control and GPU-based computation for optimal performance.
 
+ 1.	Kernel Functions:
+	•	Push and pull kernels for updating flow values.
+
+	•	Relabeling kernels for dynamic graph updates.
+	
+ 2.	Memory Management:
+	•	Shared memory for intra-block communication.
+
+	•	Global memory for inter-thread synchronization.
+
+ 3.	Execution Flow:
+	•	Initialization of graph structures.
+
+	•	Iterative kernel execution until convergence.
+
 ![Architechture](imgs/Architecture%20Diagram.jpg)
 
 ### Components
@@ -122,22 +137,7 @@ Time taken for memory from host to device: 34610 µs
 Maximum Flow: 324
 ```
 
-## Project Architecture
 
- 1.	Kernel Functions:
-	•	Push and pull kernels for updating flow values.
-
-	•	Relabeling kernels for dynamic graph updates.
-	
- 2.	Memory Management:
-	•	Shared memory for intra-block communication.
-
-	•	Global memory for inter-thread synchronization.
-
- 3.	Execution Flow:
-	•	Initialization of graph structures.
-
-	•	Iterative kernel execution until convergence.
 
 ## Applications
 	
